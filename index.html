@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>circle-自制</title>
+</head>
+
+<body style="background-color: #222;">
+	<div id="circle" style="width: 300px;height: 300px;"></div>
+	<div id="circle02" style="width: 200px;height: 200px;"></div>
+</body>
+<script type="text/javascript" src="./canvas-circle.js"></script>
+<script type="text/javascript">
+	window.onload = function() {
+		var canvasCircle = new CirChart({
+			el: 'circle',
+			shadowColor: 'rgba(0,0,0,0.5)',
+			bg: {
+				fillColor: '#27253d'
+			},
+			label: {
+				show: true
+			},
+			front: {
+				lineCap: 'round',
+				thickness: 50
+			},
+			animation: {
+				show: true,
+				duration: 50
+			},
+			data: [{
+					value: 30,
+					name: '数据',
+					fillColor: '#2d4059'
+				},
+				{
+					value: 30,
+					name: '数据',
+					fillColor: '#ffb400'
+				},
+				{
+					value: 30,
+					name: '可爱',
+					fillColor: '#f6f6f6'
+				},
+				{
+					value: 10,
+					name: '可爱',
+					fillColor: '#ea5455'
+				}
+			]
+		});
+		var canvasCircle2 = new CirChart({
+			el: 'circle02',
+			bg: {
+				fillColor: '#27253d'
+			},
+			label: {
+				show: true
+			},
+			animation: {
+				show: true,
+			},
+			data: [{
+					value: 30,
+					name: '数据',
+					fillColor: '#7da87b'
+				},
+				{
+					value: 20,
+					name: '可爱',
+					fillColor: '#326765'
+				}
+			]
+		});
+	};
+</script>
+</html>
