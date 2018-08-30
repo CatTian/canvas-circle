@@ -11,7 +11,7 @@
  * @constructor
  */
 function CirChart(config) {
-  // 构造函数模式用于定义实例属性（每个实例都会有自己的一份实例属性副本），原型模式用于定义方法和共享属性
+  // 构造函数模式用于定义实例属性（每个实例都会有自己的一份实例属性副本）
   this.cfg = {
     el: '', // 元素
     canvas: null,
@@ -66,14 +66,14 @@ function CirChart(config) {
   };
   this.init(config);
 }
-// 共享性不高的属性，由于数量较多，是做成构造函数的实例属性好呢，还是实例中由所有实例共享的属性好呢？
+// 原型模式用于定义方法和共享属性
 CirChart.prototype = {
   constructor: CirChart,
   // 初始化
   init: function(config) {
     // self 实际上始终都指向 window 所以要改掉 var self = this; 的习惯
     var $this = this;
-    // 替换自定义属性
+    // 深度拷贝配置项
     extend(true, $this.cfg, config);
 
     $this.cfg.el = document.getElementById($this.cfg.el);
@@ -204,10 +204,7 @@ CirChart.prototype = {
     ctx.fillStyle = $this.cfg.arrow.fontColor;
     ctx.save();
     ctx.beginPath();
-    ctx.shadowColor = $this.cfg.fontStyle.shadowColor;
-    ctx.shadowBlur = $this.cfg.fontStyle.shadowBlur;
-    ctx.shadowOffsetX = $this.cfg.fontStyle.shadowX;
-    ctx.shadowOffsetY = $this.cfg.fontStyle.shadowY;
+    $this.drowFontStyle(); // 绘制字体样式
     ctx.fillText(name, x, y);
     ctx.fill();
     ctx.restore();
@@ -226,27 +223,28 @@ CirChart.prototype = {
       ctx = $this.cfg.ctx,
       r = ($this.cfg.point - $this.cfg.front.thickness - $this.cfg.front.shadowBlur) * 0.9,
       a = $this.cfg.point,
-      b = a,
+      b = a, // 用于区分x轴和y轴
       x1 = Number(a + radius * Math.cos(angle)),
       y1 = Number(b + radius * Math.sin(angle)),
       x2 = Number(a + r * Math.cos(angle)),
       y2 = Number(b + r * Math.sin(angle)),
-      d, d2, d3, align;
+      d = $this.cfg.front.thickness / 4,
+      d2, d3, align;
     // 根据弧度大小调整百分比标签的对其方式
     if (angle > (Math.PI / 2)) { // 左侧
-      d = -$this.cfg.front.thickness / 4; // 折线长度为饼厚度的1/4
+      d = -d; // 折线长度为饼厚度的1/4
       d2 = +3;
       d3 = 0;
       align = 'right';
     } else if (angle < (Math.PI / 2)) { // 右侧
-      d = $this.cfg.front.thickness / 4;
+      d = d;
       d2 = +1;
       d3 = 0;
       align = 'left';
     } else { // 顶部、底部
       d = 0;
       d2 = +1;
-      d3 = $this.cfg.front.thickness / 4;
+      d3 = d;
       align = 'center';
     }
 
@@ -262,21 +260,24 @@ CirChart.prototype = {
     ctx.lineTo(x1, y1); // 起点
     ctx.lineTo((x2 + d), y2); // 折点
     ctx.lineTo((x2 + 2 * d), (y2 + d3)); // 终点
-    ctx.shadowColor = $this.cfg.fontStyle.shadowColor;
-    ctx.shadowBlur = $this.cfg.fontStyle.shadowBlur;
-    ctx.shadowOffsetX = $this.cfg.fontStyle.shadowX;
-    ctx.shadowOffsetY = $this.cfg.fontStyle.shadowY;
+    $this.drowFontStyle(); // 绘制字体样式
     ctx.stroke();
 
     ctx.beginPath(); // 数据值
     ctx.save();
+    $this.drowFontStyle(); // 绘制字体样式
+    ctx.fillText(val + '%', (x2 + 2 * d + d2), (y2 + 2 * d3)); // 数据值
+    ctx.fill();
+    ctx.restore();
+  },
+  // 将数据名和百分比标签字体公共样式提出
+  drowFontStyle: function() {
+    var $this = this,
+      ctx = $this.cfg.ctx;
     ctx.shadowColor = $this.cfg.fontStyle.shadowColor;
     ctx.shadowBlur = $this.cfg.fontStyle.shadowBlur;
     ctx.shadowOffsetX = $this.cfg.fontStyle.shadowX;
     ctx.shadowOffsetY = $this.cfg.fontStyle.shadowY;
-    ctx.fillText(val + '%', (x2 + 2 * d + d2), (y2 + 2 * d3)); // 数据值
-    ctx.fill();
-    ctx.restore();
   },
   /**
    * [绘制动画]
@@ -299,13 +300,13 @@ CirChart.prototype = {
     }());
   }
 }
-// 配置拷贝，可深可浅
+/***********************************配置拷贝，可深可浅(参考zepto的$.extend())*********************************/
 var class2type = {},
+  emptyArray = [],
+  slice = emptyArray.slice,
   isArray = Array.isArray || function(object) {
     return object instanceof Array;
-  },
-  emptyArray = [],
-  slice = emptyArray.slice;
+  };
 
 function isWindow(obj) {
   return obj != null && obj == obj.window;
@@ -335,7 +336,15 @@ function _extend(target, source, deep) {
     }
   else if (source[key] !== undefined) target[key] = source[key]
 }
-var extend = function(target) {
+/**
+ * [extend 配置拷贝]
+ *
+ * @param  {[type]} target
+ * @return {[type]} 用法：默认情况下为，复制为浅拷贝（浅复制）。如果第一个参数为true表示深度拷贝（深度复制）
+ * extend(target, [source, [source2, ...]])   ⇒ target
+ * extend(true, target, [source, ...])   ⇒ target v1.0+
+ */
+function extend(target) {
   var deep, args = slice.call(arguments, 1)
   if (typeof target == 'boolean') {
     deep = target;
