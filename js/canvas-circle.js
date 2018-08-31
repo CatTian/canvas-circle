@@ -13,25 +13,25 @@
 function CirChart(config) {
   // 构造函数模式用于定义实例属性（每个实例都会有自己的一份实例属性副本）
   this.cfg = {
-    el: '', // 元素
-    canvas: null,
+    el: '', // 容器id #box
+    canvas: null, // 画布元素，程序内创建
     ctx: null,
-    size: null, // 尺寸
-    radius: 0.0, // 半径 与size相关联 不用设置
-    point: '', // 绘制原点坐标，因为初始化为二倍图，所以原点坐标为直径
-    front: {
-      thickness: 40, // 饼图厚度 如果有百分比标签[isDrowLabel]，厚度不能超多canvas半径的1/3
+    size: null, // 容器尺寸
+    radius: 0.0, // 绘图半径 与size相关联 不用设置
+    point: '', // 绘制原点坐标，因为初始化为二倍图，所以原点坐标初始化取size
+    front: { // 数据环图
+      thickness: 40, // 饼图厚度 如果有百分比标签[isDrowLabel]，厚度不能超过size的1/4
       lineCap: 'butt', // 'butt'直角 'round'圆角
-      shadowX: 0.0, // 阴影x轴位移
-      shadowY: 0.0, // 阴影y轴位移
-      shadowBlur: 5 // 阴影大小
+      shadowX: 0.0, // 饼图阴影x轴位移
+      shadowY: 0.0, // 饼图阴影y轴位移
+      shadowBlur: 5 // 饼图阴影大小
     },
     bg: { // 背景
       fillColor: '#27253d', // 圆环颜色
       thickness: .8, // 背景与饼图厚度的占比1=100%，默认80%
-      shadowX: 0.0, // 阴影x轴位移
-      shadowY: 0.0, // 阴影y轴位移
-      shadowBlur: 5 // 阴影大小
+      shadowX: 0.0, // 背景阴影x轴位移
+      shadowY: 0.0, // 背景阴影y轴位移
+      shadowBlur: 5 // 背景阴影大小
     },
     label: {
       show: false, // 是否显示百分比，默认不显示
@@ -42,13 +42,13 @@ function CirChart(config) {
       fontFamily: 12, // 标示数据名标签 字号、字体
       fontColor: '#fff' // 标签数据名字体颜色
     },
-    shadowColor: 'rgba(0,0,0,0.6)', // 统一阴影颜色
+    shadowColor: 'rgba(0,0,0,0.6)', // 所有阴影的颜色 [接收rgba、rgb格式]
     fontStyle: {
-      textAlign: 'center', // 统一文案居中
-      shadowColor: 'rgba(0,0,0,0.6)',
-      shadowX: 0.0,
-      shadowY: 0.0,
-      shadowBlur: 5
+      textAlign: 'center', // 所有文案的居中方式默认为[居中]
+      shadowColor: 'rgba(0,0,0,0.6)', // 字体阴影颜色 [接收rgba、rgb格式]
+      shadowX: 0.0, // 字体阴影 x轴位移
+      shadowY: 0.0, // 字体阴影 y轴位移
+      shadowBlur: 5 // 字体阴影 大小
     },
     animation: {
       show: false, // 是否开启动画效果，默认是关闭
@@ -56,7 +56,7 @@ function CirChart(config) {
       speed: [], //各数据的动画速度，目前只支持匀速
       locus: [] // 各数据的动画轨迹
     },
-    data: [ // 总量100
+    data: [ // 占比总量100
       {
         value: 70, // 占比 百分比制
         name: '数据', // 数据名
@@ -71,7 +71,6 @@ CirChart.prototype = {
   constructor: CirChart,
   // 初始化
   init: function(config) {
-    // self 实际上始终都指向 window 所以要改掉 var self = this; 的习惯
     var $this = this;
     // 深度拷贝配置项
     extend(true, $this.cfg, config);
@@ -81,6 +80,10 @@ CirChart.prototype = {
     $this.cfg.doubleSize = $this.cfg.size * 2;
     // 绘制原点
     $this.cfg.point = $this.cfg.size;
+    // 饼图厚度 如果有百分比标签[isDrowLabel]，厚度不能超过size的1/4
+    if ($this.cfg.front.thickness > $this.cfg.size / 4) {
+      $this.cfg.front.thickness = $this.cfg.size / 4;
+    }
     // 计算半径
     if ($this.cfg.label.show) { //显示数据标签，需要缩小环形图半径
       $this.cfg.radius = ($this.cfg.point - $this.cfg.front.thickness - $this.cfg.front.shadowBlur) * .7;
@@ -93,10 +96,44 @@ CirChart.prototype = {
     if ($this.cfg.animation.show === true) {
       $this.drowAnimat($this.cfg.data);
     } else {
-      // 先画背景圆环再画填充
-      $this.drowBgCir();
-      $this.drowCir($this.cfg.data);
+      $this.initDrowCri($this.cfg.data);
     }
+  },
+  /**
+   * [绘制原型图--无动画]
+   *
+   * @param  {[type]} data
+   */
+  initDrowCri: function(data) {
+    var $this = this;
+    // 先画背景圆环再画填充
+    $this.drowBgCir();
+    $this.drowCir(data);
+  },
+  drowFrame: function(data) {
+    var $this = this;
+    $this.cfg.ctx.clearRect(0, 0, $this.cfg.doubleSize, $this.cfg.doubleSize);
+    $this.initDrowCri(data);
+  },
+  /**
+   * [绘制动画]
+   *
+   * @param  {[type]} data 数据
+   */
+  drowAnimat: function(data) {
+    var $this = this;
+    // 初始化每个数据的 locus[i], 动画速度speed[i]
+    data.forEach(function(o, i) {
+      $this.cfg.animation.locus[i] = null;
+      $this.cfg.animation.speed[i] = null;
+    });
+    // 动画渲染帧
+    window.requestAnimationFrame(function (data) {
+      $this.drowFrame(data);
+      if ($this.cfg.animation.show) {
+        window.requestAnimationFrame(arguments.callee);
+      }
+    });
   },
   // 设定canvas宽高
   initWidget: function() {
@@ -204,7 +241,7 @@ CirChart.prototype = {
     ctx.fillStyle = $this.cfg.arrow.fontColor;
     ctx.save();
     ctx.beginPath();
-    $this.drowFontStyle(); // 绘制字体样式
+    $this.drowShadowStyle(); // 绘制字体阴影样式
     ctx.fillText(name, x, y);
     ctx.fill();
     ctx.restore();
@@ -221,14 +258,14 @@ CirChart.prototype = {
   drowLabel: function(angle, radius, color, val) {
     var $this = this,
       ctx = $this.cfg.ctx,
-      r = ($this.cfg.point - $this.cfg.front.thickness - $this.cfg.front.shadowBlur) * 0.9,
+      r = ($this.cfg.point - $this.cfg.front.thickness - $this.cfg.front.shadowBlur) * .95,
       a = $this.cfg.point,
       b = a, // 用于区分x轴和y轴
       x1 = Number(a + radius * Math.cos(angle)),
       y1 = Number(b + radius * Math.sin(angle)),
       x2 = Number(a + r * Math.cos(angle)),
       y2 = Number(b + r * Math.sin(angle)),
-      d = $this.cfg.front.thickness / 4,
+      d = $this.cfg.front.thickness / 5,
       d2, d3, align;
     // 根据弧度大小调整百分比标签的对其方式
     if (angle > (Math.PI / 2)) { // 左侧
@@ -255,103 +292,29 @@ CirChart.prototype = {
     ctx.lineWidth = 1;
     ctx.strokeStyle = color;
     ctx.save();
-    ctx.beginPath(); // 折线
+    // 折线
+    ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x1, y1); // 起点
     ctx.lineTo((x2 + d), y2); // 折点
-    ctx.lineTo((x2 + 2 * d), (y2 + d3)); // 终点
-    $this.drowFontStyle(); // 绘制字体样式
+    ctx.lineTo(((x2 + d) + d), (y2 + d3)); // 终点
+    $this.drowShadowStyle(); // 绘制折线阴影样式
     ctx.stroke();
-
-    ctx.beginPath(); // 数据值
+    // 数据值
+    ctx.beginPath();
     ctx.save();
-    $this.drowFontStyle(); // 绘制字体样式
+    $this.drowShadowStyle(); // 绘制字体阴影样式
     ctx.fillText(val + '%', (x2 + 2 * d + d2), (y2 + 2 * d3)); // 数据值
     ctx.fill();
     ctx.restore();
   },
-  // 将数据名和百分比标签字体公共样式提出
-  drowFontStyle: function() {
+  // 将数据名和百分比标签字体阴影公共样式提出
+  drowShadowStyle: function() {
     var $this = this,
       ctx = $this.cfg.ctx;
     ctx.shadowColor = $this.cfg.fontStyle.shadowColor;
     ctx.shadowBlur = $this.cfg.fontStyle.shadowBlur;
     ctx.shadowOffsetX = $this.cfg.fontStyle.shadowX;
     ctx.shadowOffsetY = $this.cfg.fontStyle.shadowY;
-  },
-  /**
-   * [绘制动画]
-   *
-   * @param  {[type]} data 数据
-   */
-  drowAnimat: function(data) {
-    var $this = this;
-    // 初始化 locus[], 动画速度speed[]
-    data.forEach(function(o, i) {
-      $this.cfg.animation.locus[i] = null;
-      $this.cfg.animation.speed[i] = null;
-    });
-    // 执行动画
-    (function drowFrame() {
-      window.requestAnimationFrame(drowFrame, $this.cfg.canvas);
-      $this.cfg.ctx.clearRect(0, 0, $this.cfg.doubleSize, $this.cfg.doubleSize);
-      $this.drowBgCir();
-      $this.drowCir(data);
-    }());
   }
-}
-/***********************************配置拷贝，可深可浅(参考zepto的$.extend())*********************************/
-var class2type = {},
-  emptyArray = [],
-  slice = emptyArray.slice,
-  isArray = Array.isArray || function(object) {
-    return object instanceof Array;
-  };
-
-function isWindow(obj) {
-  return obj != null && obj == obj.window;
-}
-
-function type(obj) {
-  return obj == null ? String(obj) :
-    class2type[toString.call(obj)] || "object";
-}
-
-function isObject(obj) {
-  return type(obj) == "object";
-}
-
-function isPlainObject(obj) {
-  return isObject(obj) && !isWindow(obj) && Object.getPrototypeOf(obj) == Object.prototype;
-}
-
-function _extend(target, source, deep) {
-  for (key in source)
-    if (deep && (isPlainObject(source[key]) || isArray(source[key]))) {
-      if (isPlainObject(source[key]) && !isPlainObject(target[key]))
-        target[key] = {};
-      if (isArray(source[key]) && !isArray(target[key]))
-        target[key] = [];
-      _extend(target[key], source[key], deep);
-    }
-  else if (source[key] !== undefined) target[key] = source[key]
-}
-/**
- * [extend 配置拷贝]
- *
- * @param  {[type]} target
- * @return {[type]} 用法：默认情况下为，复制为浅拷贝（浅复制）。如果第一个参数为true表示深度拷贝（深度复制）
- * extend(target, [source, [source2, ...]])   ⇒ target
- * extend(true, target, [source, ...])   ⇒ target v1.0+
- */
-function extend(target) {
-  var deep, args = slice.call(arguments, 1)
-  if (typeof target == 'boolean') {
-    deep = target;
-    target = args.shift();
-  }
-  args.forEach(function(arg) {
-    _extend(target, arg, deep);
-  })
-  return target;
 }
