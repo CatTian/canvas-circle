@@ -1,10 +1,51 @@
 # canvas-circle
 数据可视化--环形图  
-
+#### 调用：  
+```js
+var canvasCircle = new CirChart({
+  el: 'circle',
+  shadowColor: 'rgba(0,0,0,0.5)',
+  bg: {
+    fillColor: '#27253d'
+  },
+  label: {
+    show: true
+  },
+  front: {
+    lineCap: 'round',
+    thickness: 50
+  },
+  animation: {
+    show: true,
+    duration: 50
+  },
+  data: [{
+      value: 30,
+      name: '美丽',
+      fillColor: '#2d4059'
+    },
+    {
+      value: 30,
+      name: '温柔',
+      fillColor: '#ffb400'
+    },
+    {
+      value: 30,
+      name: '知性',
+      fillColor: '#f6f6f6'
+    },
+    {
+      value: 10,
+      name: '可爱',
+      fillColor: '#ea5455'
+    }
+  ]
+});
+```
 #### 配置：  
 ```js
 this.cfg = {
-  el: '', // 容器id #box
+  el: '', // 容器id
   canvas: null, // 画布元素，程序内创建
   ctx: null,
   size: null, // 容器尺寸
@@ -57,5 +98,5 @@ this.cfg = {
   ]
 };
 ```
-#### 效果  
+#### 效果：  
 ![环形图](./img/example.png "环形图")
