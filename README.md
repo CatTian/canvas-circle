@@ -1,7 +1,7 @@
 # canvas-circle
 数据可视化--环形图  
 
-####配置：  
+#### 配置：  
 ```js
 this.cfg = {
   el: '', // 容器id #box
@@ -57,5 +57,5 @@ this.cfg = {
   ]
 };
 ```
-####效果
+#### 效果  
 ![环形图](./img/example.png "环形图")
