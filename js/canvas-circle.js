@@ -13,7 +13,7 @@
 function CirChart(config) {
   // 构造函数模式用于定义实例属性（每个实例都会有自己的一份实例属性副本）
   this.cfg = {
-    el: '', // 容器id #box
+    el: '', // 容器id
     canvas: null, // 画布元素，程序内创建
     ctx: null,
     size: null, // 容器尺寸
