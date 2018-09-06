@@ -1,6 +1,19 @@
 # canvas-circle
 数据可视化--环形图  
 #### 调用：  
+
+html
+
+```html
+<div id="circle" style="width: 300px;height: 300px;"></div>
+
+<script type="text/javascript" src="./js/extend.js"></script>
+<script type="text/javascript" src="./js/animationFrame.js"></script>
+<script type="text/javascript" src="./js/canvas-circle.js"></script>
+```
+
+js
+
 ```js
 var canvasCircle = new CirChart({
   el: 'circle',
